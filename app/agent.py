@@ -17,15 +17,18 @@ def clean_response(text):
     Clean common Qwen thinking/reasoning output.
     """
 
+    if EXPECTED_TEST_RESPONSE == text:
+        return text
+
     if EXPECTED_TEST_RESPONSE in text:
-        return EXPECTED_TEST_RESPONSE
+        return f"Model returned a similar response:\n - Expected:\t{EXPECTED_TEST_RESPONSE}\n - Retourned:\t{text}"
 
     text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
 
     if "</think>" in text:
         text = text.split("</think>")[-1]
 
-  
+
     reasoning_starters = [
         "Hmm,",
         "The user wants",
