@@ -17,11 +17,9 @@ def clean_response(text):
     Clean common Qwen thinking/reasoning output.
     """
 
-    if EXPECTED_TEST_RESPONSE == text:
-        return text
-
-    if EXPECTED_TEST_RESPONSE in text:
-        return f"Model returned a similar response:\n - Expected:\t{EXPECTED_TEST_RESPONSE}\n - Retourned:\t{text}"
+    prefix = ""
+    if "<think>" in text or "</think>" in text:
+       prefix = "Model included thinking in their response: "
 
     text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
 
@@ -44,7 +42,7 @@ def clean_response(text):
         if cleaned.startswith(starter):
             return "The model responded, but did not follow the exact output format."
 
-    return cleaned
+    return prefix + cleaned
 
 
 def ask_ollama(user_prompt):
