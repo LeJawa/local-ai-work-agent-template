@@ -1,0 +1,47 @@
+{
+    "needs_reply": [
+        {
+            "source": "",
+            "from": "",
+            "subject": "",
+            "summary": "",
+            "suggested_next_step": ""
+        }
+    ],
+    "needs_action": [
+        {
+            "source": "",
+            "from": "",
+            "subject": "",
+            "summary": "",
+            "suggested_next_step": "",
+            "todo_title": ""
+        }
+    ],
+    "waiting_on": [
+        {
+            "source": "",
+            "from": "",
+            "subject": "",
+            "summary": "",
+            "waiting_for": ""
+        }
+    ],
+    "follow_up": [
+        {
+            "source": "",
+            "from": "",
+            "subject": "",
+            "summary": "",
+            "follow_up_reason": ""
+        }
+    ],
+    "fyi": [
+        {
+            "source": "",
+            "from": "",
+            "subject": "",
+            "summary": ""
+        }
+    ]
+}
