@@ -32,3 +32,4 @@ AGENT_NAME = os.getenv("AGENT_NAME", "Local Work Agent")
 ENABLE_THINKING = getenv_bool("ENABLE_THINKING", False)
 
 BATCH_SIZE = getenv_int("BATCH_SIZE", 5)
+CONCURRENT_OLLAMA_CALLS = getenv_int("CONCURRENT_OLLAMA_CALLS", 3)

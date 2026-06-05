@@ -29,6 +29,9 @@ fyi:
 - Use this for informational messages only.
 - Examples: newsletters, receipts, routine updates, completed backups, marketing announcements, confirmations with no action.
 
+undesired:
+- Use this for undesired emails only, like phishing or scam emails.
+
 Rules:
 - Return only JSON.
 - Do not explain.

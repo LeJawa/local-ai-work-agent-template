@@ -1,3 +1,4 @@
+import asyncio
 from collections.abc import Iterator
 from loguru import logger
 import json
@@ -47,7 +48,7 @@ def empty_summary() -> dict[str, list[dict[str,str]]]:
 
 OUTPUT_TOKENS_PER_MESSAGE = 100
 
-def summarize_messages_no_batch(messages: list[dict[str,str]]) -> dict[str, list[dict[str,str]]]:
+async def summarize_messages_no_batch(messages: list[dict[str,str]]) -> dict[str, list[dict[str,str]]]:
     if not messages:
         return empty_summary()
 
@@ -61,7 +62,7 @@ def summarize_messages_no_batch(messages: list[dict[str,str]]) -> dict[str, list
     predicted_output_tokens = OUTPUT_TOKENS_PER_MESSAGE * len(messages)
     context_tokens = 4096
 
-    response = ask_local_model(prompt, system_prompt=system_prompt, num_predict=predicted_output_tokens, num_ctx=context_tokens, json_mode=True)
+    response = await ask_local_model(prompt, system_prompt=system_prompt, num_predict=predicted_output_tokens, num_ctx=context_tokens, json_mode=True)
 
     end_time = time()
     logger.info(f"No-batch request completed in  {end_time - start_time:.2f} seconds.")
@@ -85,15 +86,17 @@ def batch_iterator(messages: list[dict[str,str]], batch_size: int = BATCH_SIZE) 
     if batch:
         yield batch
 
-def summarize_messages(messages: list[dict[str,str]]) -> dict[str, list[dict[str,str]]]:
+async def summarize_messages(messages: list[dict[str,str]]) -> dict[str, list[dict[str,str]]]:
     if not messages:
         return empty_summary()
 
-    batch_results = []
+    tasks = []
 
-    for batch_number, batch in enumerate(batch_iterator(messages), start=1):
-        batch_result = classify_message_batch(batch, batch_number)
-        batch_results.append(batch_result)
+    async with asyncio.TaskGroup() as tg:
+        for batch_number, batch in enumerate(batch_iterator(messages), start=1):
+            tasks.append(tg.create_task(classify_message_batch(batch, batch_number)))
+
+    batch_results = [task.result() for task in tasks]
 
     return merge_summaries(batch_results)
 
@@ -105,7 +108,7 @@ def merge_summaries(batch_results: list[dict[str, list[dict[str,str]]]]) -> dict
     return merged
 
 
-def classify_message_batch(batch: list[dict[str,str]], batch_number: int) -> dict[str, list[dict[str,str]]]:
+async def classify_message_batch(batch: list[dict[str,str]], batch_number: int) -> dict[str, list[dict[str,str]]]:
     start_time = time()
 
     logger.info(f"Processing batch {batch_number} of with {len(batch)} message{"s" if len(batch) > 1 else ""}...")
@@ -116,7 +119,7 @@ def classify_message_batch(batch: list[dict[str,str]], batch_number: int) -> dic
     predicted_output_tokens = OUTPUT_TOKENS_PER_MESSAGE * len(batch)
     context_tokens = 4096
 
-    response = ask_local_model(prompt, system_prompt=system_prompt, num_predict=predicted_output_tokens, num_ctx=context_tokens, json_mode=True)
+    response = await ask_local_model(prompt, system_prompt=system_prompt, num_predict=predicted_output_tokens, num_ctx=context_tokens, json_mode=True)
 
     end_time = time()
     logger.success(f"Batch {batch_number} completed in  {end_time - start_time:.2f} seconds.")

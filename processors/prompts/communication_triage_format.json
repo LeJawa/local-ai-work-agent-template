@@ -43,5 +43,13 @@
             "subject": "",
             "summary": ""
         }
+    ],
+    "undesired": [
+        {
+            "source": "",
+            "from": "",
+            "subject": "",
+            "reason": ""
+        }
     ]
 }

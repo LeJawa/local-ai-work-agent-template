@@ -16,4 +16,4 @@ def terminal_format(record):
 
 logger.add(sys.stderr, level="INFO", format=terminal_format)
 
-logger.add("logs/{time}.log")
+logger.add("logs/{time}.log", level="TRACE")

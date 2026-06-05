@@ -1,3 +1,4 @@
+import asyncio
 from logger import logger
 import sys
 import os
@@ -23,7 +24,7 @@ def load_messages():
         return json.load(f)
 
 @logger.catch
-def main():
+async def main():
     start_time = time()
 
     logger.info(f"{AGENT_NAME} is starting...")
@@ -44,7 +45,7 @@ def main():
 
     logger.info("Creating communication summary...")
     summary_start_time = time()
-    summary = summarize_messages_no_batch(messages)
+    summary = await summarize_messages(messages)
     summary_end_time = time()
 
     logger.success(f"Summary created in {summary_end_time - summary_start_time:.2f} seconds.\n")
@@ -71,4 +72,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

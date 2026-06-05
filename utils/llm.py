@@ -1,3 +1,6 @@
+from http.client import responses
+import asyncio
+import httpx
 import json
 from loguru import logger
 import re
@@ -5,7 +8,7 @@ import requests
 import copy
 import math
 
-from app.config import OLLAMA_BASE_URL, OLLAMA_MODEL, ENABLE_THINKING
+from app.config import OLLAMA_BASE_URL, OLLAMA_MODEL, ENABLE_THINKING, CONCURRENT_OLLAMA_CALLS
 
 def round_up(n, multiple=256):
     return math.ceil(n / multiple) * multiple
@@ -42,10 +45,10 @@ def choose_num_ctx(payload, num_predict: int, margin=128) -> int:
     prompt_tokens = get_prompt_token_count(payload)
 
     needed = prompt_tokens + num_predict + margin
-    return round_up(needed, 256)
+    return max(round_up(needed, 256), 1024)
 
-def ask_local_model(prompt:str, system_prompt: str, num_predict=80, num_ctx=1024, json_mode=False, **kwargs: list[str|int]) -> str:
-    payload = {
+def build_payload(prompt: str, system_prompt: str, num_predict=80, num_ctx=1024, json_mode=False, **kwargs: list[str|int]) -> dict:
+    return {
         "model": OLLAMA_MODEL,
         "messages": [
             {"role": "system", "content": system_prompt},
@@ -63,30 +66,41 @@ def ask_local_model(prompt:str, system_prompt: str, num_predict=80, num_ctx=1024
         },
     }
 
+async def ask_local_model(prompt:str, system_prompt: str, num_predict=80, num_ctx=1024, json_mode=False, **kwargs: list[str|int]) -> str:
+    payload = build_payload(prompt, system_prompt, num_predict=num_predict, num_ctx=num_ctx, json_mode=json_mode, **kwargs)
+
     num_ctx = choose_num_ctx(
         payload,
         num_predict=num_predict,
     )
-
     payload["options"]["num_ctx"] = num_ctx
 
-    logger.trace(f"=========== New request ===========")
-    logger.trace(f"Payload:\n{json.dumps(payload, indent=2)}")
-
-    req_response = requests.post(
-        f"{OLLAMA_BASE_URL}/api/chat",
-        json=payload,
-        timeout=600,
-    )
-
-    req_response.raise_for_status()
-    data = req_response.json()
-
-    logger.trace(f"Response:\n{json.dumps(data, indent=2)}")
-
-    response = data["message"]["content"]
+    response = await ollama_chat(payload)
 
     return clean_response(response)
+
+sem = asyncio.Semaphore(CONCURRENT_OLLAMA_CALLS)
+
+async def ollama_chat(payload) -> str:
+    async with sem:
+
+        logger.trace(f"=========== New request ===========")
+        logger.trace(f"Payload:\n{json.dumps(payload, indent=2)}")
+
+        async with httpx.AsyncClient() as client:
+            req_response = await client.post(
+            f"{OLLAMA_BASE_URL}/api/chat",
+            json=payload,
+            timeout=600,
+        )
+
+        req_response.raise_for_status()
+        data = req_response.json()
+
+        logger.trace(f"Response:\n{json.dumps(data, indent=2)}")
+
+        response = data["message"]["content"]
+        return response
 
 def clean_response(text) -> str:
     """
